@@ -645,13 +645,171 @@ body.drawer-open .chart-wrap {
   padding-top: 0;
 }
 
+
+/* one-page fixed dashboard */
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  min-height: 100vh;
+  padding: 22px 28px;
+}
+
+.app {
+  height: calc(100vh - 44px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.hero {
+  flex: 0 0 auto;
+  padding: 0 0 16px 0;
+}
+
+.brand-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0;
+}
+
+.brand-logo {
+  height: 1.08em;
+  width: auto;
+  display: block;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.brand-title h1 { margin: 0; }
+
+.layout {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+}
+
+.menu,
+.chart-card {
+  height: 100%;
+  max-height: 100%;
+}
+
+.menu {
+  position: relative;
+  top: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: 28px;
+  padding-bottom: 22px;
+}
+
+.chart-card h2,
+.date-note { flex: 0 0 auto; }
+
+.date-note { margin-bottom: 18px; }
+
+.scroll-x {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chart-wrap,
+.chart,
+.labels,
+.plot { height: 100%; }
+
+.chart { grid-template-columns: 320px minmax(600px, 1fr); }
+
+.plot { padding-bottom: 42px; }
+.gridline { bottom: 36px; }
+.tick { bottom: 12px; }
+.axis-title { bottom: -2px; }
+
+.row-label,
+.bar-row { height: var(--row-h, 32px); }
+
+.row-label {
+  font-size: var(--label-font, 12px);
+  line-height: 1.2;
+  white-space: normal;
+}
+
+.bar { height: var(--bar-h, 8px); }
+.bar.answer { top: var(--answer-top, 6px); }
+.bar.unanswer { top: var(--unanswer-top, 18px); }
+.pct.answer-pct { top: calc(var(--answer-top, 6px) - 7px); }
+.pct.unanswer-pct { top: calc(var(--unanswer-top, 18px) - 7px); }
+
+.legend {
+  flex: 0 0 auto;
+  margin-top: 12px;
+}
+
+.menu-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: #CFCBC2 transparent;
+}
+
+.menu-list::-webkit-scrollbar { width: 8px; }
+.menu-list::-webkit-scrollbar-track { background: transparent; }
+.menu-list::-webkit-scrollbar-thumb { background: #CFCBC2; border-radius: 999px; }
+
+.menu-group {
+  margin: 14px 0 6px;
+  padding: 8px 10px 6px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Noto Sans TC", sans-serif;
+}
+
+.menu-group:first-child {
+  margin-top: 0;
+  border-top: 0;
+  padding-top: 0;
+}
+
+@media (max-width: 1100px) {
+  html, body { overflow: auto; height: auto; }
+  body { min-height: 100vh; }
+  .app { height: auto; }
+  .layout { height: auto; }
+  .menu, .chart-card { height: auto; max-height: none; }
+  .menu { position: static; }
+  .menu-list { max-height: none; }
+}
+
+@media (max-width: 980px) {
+  .scroll-x { overflow-x: auto; overflow-y: hidden; }
+  .plot { min-width: 780px; }
+  .brand-title { gap: 10px; }
+}
+
 </style>
 </head>
 <body>
   <div class="app">
     <header class="hero">
-      <h1>YouTube × Instagram 留言圖表總覽</h1>
-      <p>點選左側清單即可切換圖表。</p>
+      <div class="brand-title"><img class="brand-logo" src="transparent-aigoasia_logo.png" alt="AIGO Asia logo"><h1>YouTube × Instagram 留言圖表總覽</h1></div>
     </header>
 
     <div class="layout">
@@ -718,6 +876,37 @@ const drawerMeta = document.getElementById("drawerMeta");
 let activeMenuIndex = 0;
 let activeRow = null;
 
+const GLOBAL_MAX_CATEGORIES = Math.max(...ALL_CHARTS.map(chart => (chart.data || []).length), 1);
+
+function applyFixedChartScale() {
+  const chart = document.getElementById("chartCanvas");
+  if (!chart) return;
+
+  if (window.innerWidth <= 1100) {
+    chart.style.removeProperty("--row-h");
+    chart.style.removeProperty("--bar-h");
+    chart.style.removeProperty("--answer-top");
+    chart.style.removeProperty("--unanswer-top");
+    chart.style.removeProperty("--label-font");
+    return;
+  }
+
+  const plotHeight = Math.max(260, chart.clientHeight - 42);
+  const rowH = Math.max(20, Math.min(52, Math.floor(plotHeight / GLOBAL_MAX_CATEGORIES)));
+  const barH = Math.max(5, Math.min(14, Math.floor(rowH * 0.28)));
+  const gap = Math.max(4, Math.floor(rowH * 0.12));
+  const answerTop = Math.max(3, Math.floor((rowH - (barH * 2 + gap)) / 2));
+  const unanswerTop = answerTop + barH + gap;
+  const labelFont = Math.max(10, Math.min(15, Math.floor(rowH * 0.42)));
+
+  chart.style.setProperty("--row-h", `${rowH}px`);
+  chart.style.setProperty("--bar-h", `${barH}px`);
+  chart.style.setProperty("--answer-top", `${answerTop}px`);
+  chart.style.setProperty("--unanswer-top", `${unanswerTop}px`);
+  chart.style.setProperty("--label-font", `${labelFont}px`);
+}
+
+
 function escapeHtml(s) {
   return String(s ?? "")
     .replaceAll("&", "&amp;")
@@ -741,27 +930,10 @@ function normalizeItem(c) {
 }
 
 
-function syncMenuHeight() {
-  const menu = document.querySelector(".menu");
-  const card = document.querySelector(".chart-card");
-  if (!menu || !card) return;
-
-  if (window.innerWidth <= 1100) {
-    menu.style.height = "";
-    document.documentElement.style.setProperty("--chart-card-height", "auto");
-    return;
-  }
-
-  const h = Math.max(420, card.offsetHeight);
-  document.documentElement.style.setProperty("--chart-card-height", `${h}px`);
-  menu.style.height = `${h}px`;
-}
 
 function buildMenu() {
   menuList.innerHTML = "";
-
   if (!ALL_CHARTS || ALL_CHARTS.length === 0) return;
-
   let lastPlatform = "";
 
   ALL_CHARTS.forEach((chart, idx) => {
@@ -780,7 +952,6 @@ function buildMenu() {
     btn.type = "button";
     btn.className = "menu-button";
     btn.dataset.index = idx;
-
     const cleanTitle = titleText.replace(/^YouTube｜/, "").replace(/^Instagram｜/, "");
 
     btn.innerHTML = `
@@ -820,7 +991,7 @@ function selectChart(index) {
   chartTitle.dataset.platform = platformLabel;
   chartDate.textContent = chart.date;
   renderChart(chart.data);
-  requestAnimationFrame(syncMenuHeight);
+  requestAnimationFrame(applyFixedChartScale);
 }
 
 function renderChart(data) {
@@ -832,6 +1003,7 @@ function renderChart(data) {
   plot.className = "plot";
   chartCanvas.appendChild(labels);
   chartCanvas.appendChild(plot);
+  requestAnimationFrame(applyFixedChartScale);
 
   const maxCount = Math.max(...data.map(d => d.total || 0), 1);
 
@@ -876,9 +1048,8 @@ function renderChart(data) {
 
     if (answered > 0) {
       const pctA = document.createElement("div");
-      pctA.className = "pct";
+      pctA.className = "pct answer-pct";
       pctA.style.left = Math.max(answerW + 1, 1) + "%";
-      pctA.style.top = "3px";
       pctA.textContent = Number(d.replyPct || 0).toFixed(1) + "%";
       row.appendChild(pctA);
     }
@@ -890,9 +1061,8 @@ function renderChart(data) {
 
     if (unanswered > 0) {
       const pctN = document.createElement("div");
-      pctN.className = "pct";
+      pctN.className = "pct unanswer-pct";
       pctN.style.left = Math.max(unanswerW + 1, 1) + "%";
-      pctN.style.top = "24px";
       pctN.textContent = Number(d.unreplyPct || 0).toFixed(1) + "%";
       row.appendChild(pctN);
     }
@@ -1023,7 +1193,7 @@ closeBtn.addEventListener("click", closeDrawer);
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeDrawer();
 });
-window.addEventListener("resize", syncMenuHeight);
+window.addEventListener("resize", applyFixedChartScale);
 
 // 若有資料，自動載入第一筆（最新的圖表）
 if (ALL_CHARTS && ALL_CHARTS.length > 0) {
